@@ -1,4 +1,4 @@
-.PHONY: dev test lint index search
+.PHONY: dev test lint index search chat
 
 dev:
 	uv run uvicorn app.main:app --reload --port 8000
@@ -8,6 +8,9 @@ test:
 
 index:
 	uv run python -m app.indexer
+
+chat:
+	uv run python -m app.cli
 
 search:
 	uv run python -m app.search $(q)
