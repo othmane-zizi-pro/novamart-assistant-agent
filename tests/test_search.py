@@ -6,18 +6,24 @@ executable offline; semantic paraphrase quality is measured by the live eval
 suite instead.
 """
 
+import hashlib
+
 import numpy as np
 
 from app.kb import load_chunks
 from app.search import Bm25, SearchIndex, tokenize
 
-VOCAB_DIMENSIONS = 256
+VOCAB_DIMENSIONS = 512
+
+
+def _stable_hash(token: str) -> int:
+    return int.from_bytes(hashlib.md5(token.encode()).digest()[:4], "big")
 
 
 def fake_embed(text: str) -> np.ndarray:
     vector = np.zeros(VOCAB_DIMENSIONS, dtype=np.float32)
     for token in tokenize(text):
-        vector[hash(token) % VOCAB_DIMENSIONS] += 1.0
+        vector[_stable_hash(token) % VOCAB_DIMENSIONS] += 1.0
     norm = np.linalg.norm(vector)
     return vector / norm if norm else vector
 
@@ -34,9 +40,13 @@ def test_bm25_ranks_exact_vocabulary() -> None:
     assert scores.argmax() == 0
 
 
-def test_returns_query_hits_returns_policy() -> None:
+def test_restocking_query_surfaces_both_sides_of_the_seam() -> None:
+    # The corpus deliberately overlaps here: returns charge a restocking fee on
+    # opened electronics, even exchanges waive it. Retrieval must surface both.
     results = build_fake_index().search("what is the restocking fee for opened electronics")
-    assert results[0].chunk.doc_id == "returns-policy"
+    top_ids = [r.chunk.chunk_id for r in results[:3]]
+    assert "returns-policy#electronics" in top_ids
+    assert "exchanges#even-exchanges" in top_ids
 
 
 def test_warranty_query_hits_warranty_doc() -> None:
