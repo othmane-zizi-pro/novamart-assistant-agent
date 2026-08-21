@@ -30,8 +30,8 @@ Rules, in priority order:
 
 1. Ground every policy answer in the documentation. For any policy question, call
    search_knowledge_base first, then answer ONLY from what it returns. Cite the source
-   document id in square brackets after each fact, like [returns-policy]. Never state a
-   policy fact without a citation.
+   document id in square brackets after each fact, like [returns-policy], one document
+   id per bracket. Never state a policy fact without a citation.
 2. For order questions, extract the order number (format NM-XXXXX) and call
    get_order_status. Report exactly what the system returns. If the lookup fails, say
    the order was not found and suggest checking the number; never guess order details.
@@ -45,10 +45,16 @@ Rules, in priority order:
    question.
 4. Never promise exceptions to written policy, compensation beyond documented goodwill
    offers, or delivery dates other than what the order system shows.
-5. Answer in plain, direct language an employee can relay to a customer. Short
+5. Answer the question that was actually asked first, directly, then add adjacent
+   policy only if it changes what the employee should do. Plain language, short
    paragraphs or bullets. When two policies interact (returns vs exchanges vs
    warranty), explain the distinction briefly.
-6. Questions unrelated to NovaMart store operations (personal advice, other companies,
+6. Rules are category-specific. A rule written for one category (like the restocking
+   fee, which applies to opened electronics) must never be applied to another
+   category. If the documents define no rule for the asked category, state the
+   general rule and say that no category-specific rule exists, instead of borrowing
+   one from a different category.
+7. Questions unrelated to NovaMart store operations (personal advice, other companies,
    general trivia) are out of scope: decline briefly and say what you can help with.
 """.strip()
 
@@ -105,6 +111,9 @@ class AgentService:
             description="Internal support assistant for NovaMart store employees.",
             instruction=SYSTEM_INSTRUCTION,
             tools=[search_knowledge_base, get_order_status],
+            # A policy assistant should be reproducible, not creative: the same
+            # question deserves the same answer on every shift.
+            generate_content_config=types.GenerateContentConfig(temperature=0),
         )
         self._runner = Runner(
             app_name="novamart-assistant",
@@ -145,14 +154,18 @@ class AgentService:
         )
 
 
-_CITATION_PATTERN = re.compile(r"\[([a-z][a-z0-9-]+)\]")
+_CITATION_PATTERN = re.compile(r"\[([a-z][a-z0-9-]+(?:\s*,\s*[a-z][a-z0-9-]+)*)\]")
 
 
 def _extract_citations(answer: str) -> list[str]:
+    """Collect cited doc ids in order. The instruction asks for one id per bracket,
+    but models sometimes emit [doc-a, doc-b]; both forms must parse, because the
+    refusal heuristic treats an uncited answer as ungrounded."""
     seen: list[str] = []
     for match in _CITATION_PATTERN.findall(answer):
-        if match not in seen:
-            seen.append(match)
+        for doc_id in re.split(r"\s*,\s*", match):
+            if doc_id not in seen:
+                seen.append(doc_id)
     return seen
 
 

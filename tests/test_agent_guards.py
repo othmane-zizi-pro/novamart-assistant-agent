@@ -43,3 +43,8 @@ def test_gap_log_appends_entries(tmp_path: Path) -> None:
         "what is the drone delivery policy",
         "can customers pay in crypto",
     ]
+
+
+def test_comma_separated_citation_lists_parse() -> None:
+    answer = "The discount never stacks with a match [employee-discount, price-match]."
+    assert _extract_citations(answer) == ["employee-discount", "price-match"]
