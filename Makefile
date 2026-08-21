@@ -1,4 +1,4 @@
-.PHONY: dev test lint index search chat ui
+.PHONY: dev test lint index search chat ui eval
 
 dev:
 	uv run uvicorn app.main:app --reload --port 8000
@@ -20,3 +20,6 @@ lint:
 
 ui:
 	cd frontend && npm run dev
+
+eval:
+	uv run python -m eval.run
