@@ -1,4 +1,4 @@
-.PHONY: dev test lint index search chat
+.PHONY: dev test lint index search chat ui
 
 dev:
 	uv run uvicorn app.main:app --reload --port 8000
@@ -17,3 +17,6 @@ search:
 
 lint:
 	uv run ruff check .
+
+ui:
+	cd frontend && npm run dev
