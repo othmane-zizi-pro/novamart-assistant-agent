@@ -1,0 +1,17 @@
+.venv
+.git
+.github
+.pytest_cache
+.ruff_cache
+__pycache__
+node_modules
+frontend/dist
+frontend/node_modules
+data
+var
+infra
+eval
+tests
+.env
+*.md
+!corpus/*.md
