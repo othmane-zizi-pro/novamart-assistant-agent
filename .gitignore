@@ -1,0 +1,26 @@
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# secrets and local config
+.env
+
+# generated artifacts
+data/index/
+var/
+
+# frontend
+node_modules/
+frontend/dist/
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# os
+.DS_Store
